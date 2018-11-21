@@ -149,11 +149,24 @@
         sync_certs|default(false) and inventory_hostname not in groups['etcd']
   notify: set etcd_secret_changed
 
-- name: Gen_certs | check certificate permissions
+- name: Gen_certs | check certificate dir permissions
   file:
     path: "{{ etcd_cert_dir }}"
     group: "{{ etcd_cert_group }}"
     state: directory
     owner: kube
+    mode: 0750
+
+- name: Gen_certs | get certificate file name
+  find:
+    path: "{{ etcd_cert_dir }}"
+    patterns: "*.pem"
+  register: pem_files
+
+- name: Gen_certs | check certificate permissions
+  file:
+    path: "{{ item['path'] }}"
+    group: "{{ etcd_cert_group }}"
+    owner: kube
     mode: 0640
-    recurse: yes
+  with_items: "{{ pem_files['files'] }}"
